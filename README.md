@@ -1,2 +1,2 @@
 # ReaLITy Dataset and Framework
-### Sim3Real
+### Sim2Real
