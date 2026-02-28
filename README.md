@@ -1,36 +1,39 @@
 # ReaLiTy Dataset and Framework
 ### Sim2Real Dataset- Sensor and Weather Specific Adaptation for Realistic LiDAR Simulation
 
-ReaLITy-Framework/
-│── configs/
-│   ├── sensor_transfer.yaml
-│   ├── weather_transfer.yaml
+## Project Structure
+
+```
+ReaLiTy/
 │
-│── data/
-│   ├── preprocessing/        # range image generation
-│   ├── augmentations/        # 3D geometric ops for weather
+├── ReaLiTy.py
 │
-│── models/
-│   ├── cyclegan_base.py      # shared physics-informed core
-│   ├── losses.py             # custom + physics-aware losses
+├── models/
+│   └── PICGAN/
 │
-│── pipelines/
-│   ├── sensor_pipeline.py    # sensor mode wrapper
-│   ├── weather_pipeline.py   # weather mode wrapper
+├── prepare_training_data.py
 │
-│── scripts/
-│   ├── train.py              # unified CLI for training
-│   ├── inference.py          # unified CLI for inference
+├── structure/
+│   ├── projection.py
+│   ├── weather.py
+│   ├── backprojection.py
 │
-│── weights/
+├── data/
+│   └── prepare_training_data.py
+│
+├── training/
+│   └── train_picgan.py
+│
+├── transform/
+│   └── transform.py
+│
+├── weights/
 │   ├── sensor/
-│   ├── weather/
+│   └── weather/
 │
-│── examples/
-│   ├── demo_sensor_transfer.ipynb
-│   ├── demo_weather_transfer.ipynb
+├── configs/
+│   ├── sensor.yaml
+│   └── weather.yaml
 │
-│── docs/
-│   ├── README.md
-│   ├── tutorials.md
-│   ├── API.md
+└── README.md
+```
