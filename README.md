@@ -1,2 +1,2 @@
-# ReaLITy Dataset and Framework
+# ReaLiTy Dataset and Framework
 ### Sim2Real Dataset- Sensor and Weather Specific Adaptation for Realistic LiDAR Simulation
