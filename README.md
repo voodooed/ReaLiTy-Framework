@@ -116,7 +116,7 @@ To train the model on a new sensor configuration or specific weather intensity, 
 ```bash
 python training/train_picgan.py \
   --data_dir /path/to/training/tensors \
-  --config configs/sensor.yaml \
+  --config config/sensor.yaml \
   --epochs 100 \
   --batch_size 4
 ```
@@ -127,7 +127,7 @@ We highly recommend using **Open3D** to visualize the 3D point clouds. When visu
 
 ---
 
-## ⚙️ Configuration (`configs/`)
+## ⚙️ Configuration (`config/`)
 
 The YAML configuration files control the strict geometric parameters of the LiDAR sensors and the normalization statistics for the neural network.
 
@@ -152,8 +152,6 @@ intensity_std: 0.0462
 ```
 
 ---
-
-## 📝 Citation
 
 ## 📝 Citation
 If you use the ReaLiTy framework or the LADS dataset in your research, please cite our primary paper:
