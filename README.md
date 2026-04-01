@@ -1,13 +1,26 @@
-# ReaLiTy Framework & LADS Dataset
+# ReaLiTy: A Realistic LiDAR Transformation Framework & LADS Dataset
 ## Sim2Real Adaptation for Realistic LiDAR Sensor and Weather Simulation
 
-**ReaLiTy** (Realistic LiDAR Transformatiob) is a hybrid, physics-guided and learning-based framework that bridges the domain gap between simulated and real-world LiDAR point clouds.
+![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)
+![PyTorch](https://img.shields.io/badge/PyTorch-Tested-red.svg)
+![License](https://img.shields.io/badge/License-MIT-green.svg)
+
+**ReaLiTy** (Realistic LiDAR Transformation) is a unified, domain-adaptive framework designed for the physically and statistically consistent transformation of LiDAR point clouds. 
+
+Built around a conditional generative adversarial architecture (PICGAN) and physics-informed atmospheric modeling, ReaLiTy bridges the sim-to-real gap for autonomous vehicle perception systems. It enables robust adaptation across heterogeneous sensors and adverse weather conditions (such as rain and snow) without requiring full data recollection.
 
 Using this framework, we introduce **LADS** (LiDAR Adaptation Dataset Suite), a large-scale benchmark that injects physically accurate adverse weather (snow and rain) into standard clear-weather autonomous driving datasets like KITTI and nuScenes.
 
 ---
 
-## 📂 Project Structure
+## 🔹 Core Capabilities
+
+* **Sensor-to-Sensor Adaptation:** Transform synthetic or source-domain point clouds to emulate the intensity, beam divergence, and noise profiles of target LiDAR hardware.
+* **Physics-Informed Weather Adaptation:** Seamlessly integrate the LISA atmospheric model to simulate the geometric and intensity effects of adverse weather (fog, snow, rain) on clean point clouds.
+* **Sim-to-Real Intensity Bridging:** Reduce the domain gap by learning target-domain intensity distributions conditioned on local geometry, incidence angles, and acquisition context.
+* **Fast Vectorized Backprojection:** Efficiently map 2D predicted intensity tensors back to 3D spherical point clouds using an optimized, loop-free projection module.
+
+## 📂 Framework Structure
 
 ```plaintext
 ReaLiTy/
@@ -92,6 +105,45 @@ LADS provides physically accurate, adverse-weather augmented versions of standar
 ---
 
 ## 💻 Usage Guide
+
+ReaLiTy uses a single entry point (reality.py) driven by a master config.yaml.
+
+### 0. Configuration (config.yaml)
+Define your LiDAR sensor parameters, semantic reflectance mappings, and weather conditions:
+
+YAML
+mode: "weather"             # "sensor" or "weather"
+experiment_name: "T1"
+fov_up: 2.0
+fov_down: -24.9
+width: 1024
+height: 64
+intensity_mean: 0.5
+intensity_std: 0.2
+atm_model: "snow"
+precipitation_rate: 10.0
+
+Run Inference / Transformation
+
+Process a directory of raw KITTI .bin files into realism-consistent, weather-adapted point clouds:
+
+Bash
+python reality.py \
+  --mode transform \
+  --config config.yaml \
+  --picgan_root /path/to/PICGAN \
+  --weights weights/weather/kitti_clear2snow.pth.tar \
+  --input /path/to/raw/dataset \
+  --output /path/to/transformed/dataset
+3. Train on a New Sensor Target
+Wrap your existing PiCGAN training logic to automatically manage checkpoints and output paths based on your configuration:
+
+Bash
+python reality.py \
+  --mode train \
+  --config config.yaml \
+  --picgan_root /path/to/PICGAN \
+  --exp_name Custom_Sensor_V1
 
 ### 1. Using the trained models (Inference)
 
