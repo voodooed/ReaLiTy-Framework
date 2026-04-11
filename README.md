@@ -25,33 +25,35 @@ Using this framework, we introduce **LADS** (LiDAR Adaptation Dataset Suite), a 
 ```plaintext
 ReaLiTy/
 │
-├── ReaLiTy.py                  # Main orchestrator for the framework
-├── build_lads_kitti.py         # Automated LADS generator for KITTI (64-beam, 3-channel)
+├── ReaLiTy.py
 │
 ├── models/
-│   └── PICGAN/                 # Physics-Informed Conditional GAN architecture
+│     ├── PICGAN/
+│     
 │
-├── structure/                  # Core Geometry & Physics Engine
-│   ├── projection.py           # 3D Point Cloud -> 2D Spherical Range Image
-│   ├── weather.py              # LISA Atmospheric scattering engine integration
-│   └── backprojection.py       # 2D Prediction -> 3D Point Cloud mapping
+├── prepare_training_data.py
+│
+├── structure/
+│     ├── projection.py
+│     ├── weather.py
+│     ├── backprojection.py
 │
 ├── data/
-│   └── prepare_training_data.py # Data normalization and tensor preparation
+│     └── prepare_training_data.py
 │
 ├── training/
-│   └── train_picgan.py         # Training loop for the generative models
+│     └── train_picgan.py
 │
 ├── transform/
-│   └── transform.py            # End-to-end inference pipeline (Load -> Project -> Infer -> Backproject)
+│     └── transform.py
 │
-├── weights/                    # Pretrained Model Checkpoints
-│   ├── sensor/                 # Weights for Sim-to-Real sensor translation
-│   └── weather/                # Weights for Clear-to-Weather translation
+├── weights/
+│     ├── sensor/
+│     └── weather/
 │
-├── configs/                    # Hyperparameters and Normalization Statistics
-│   ├── sensor.yaml
-│   └── weather.yaml
+├── configs/
+│     ├── sensor.yaml
+│     └── weather.yaml
 │
 └── README.md
 ```
@@ -64,7 +66,7 @@ ReaLiTy/
 
 ```bash
 git clone https://github.com/voodooed/ReaLiTy-Framework.git
-cd ReaLiTy
+cd ReaLiTy_Framework
 ```
 
 ### 2. Create a Virtual Environment
@@ -78,12 +80,10 @@ conda activate reality
 
 ### 3. Install Dependencies
 
-> **Note:** Due to PyTorch compatibility, ensure you are using NumPy 1.x.
+Install all dependencies using:
 
 ```bash
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-pip install open3d matplotlib tqdm pyyaml
-pip install "numpy<2"
+pip install -r requirements.txt
 ```
 
 ---
@@ -123,7 +123,7 @@ intensity_std: 0.2
 atm_model: "snow"
 precipitation_rate: 10.0
 
-Run Inference / Transformation
+### 1. Run Inference / Transformation
 
 Process a directory of raw KITTI .bin files into realism-consistent, weather-adapted point clouds:
 
@@ -135,38 +135,14 @@ python reality.py \
   --weights weights/weather/kitti_clear2snow.pth.tar \
   --input /path/to/raw/dataset \
   --output /path/to/transformed/dataset
-3. Train on a New Sensor Target
-Wrap your existing PiCGAN training logic to automatically manage checkpoints and output paths based on your configuration:
-
-Bash
-python reality.py \
-  --mode train \
-  --config config.yaml \
-  --picgan_root /path/to/PICGAN \
-  --exp_name Custom_Sensor_V1
-
-### 1. Using the trained models (Inference)
-
-To generate your own weather-augmented data from raw clear-weather KITTI files, use the provided dataset builder scripts. Ensure your `configs/config.yaml` contains the correct normalization statistics from your training run.
-
-**For KITTI:**
-
-```bash
-python build_lads_kitti.py \
-  --kitti_root /path/to/kitti/dataset/sequences \
-  --output_dir /path/to/output/LADS/KITTI \
-  --config config/config.yaml \
-  --picgan_root models/PICGAN \
-  --weights weights/weather/kitti_clear2snow.pth.tar_T1 \
-  --weather_mode snow
-```
-
-### 2. Training the PiCGAN Model
-
-To train the model on a new sensor configuration or specific weather intensity, prepare your normalized 2D tensors and run the training script:
+  
+### 2. Train on a New Sensor/Weather Target
+   
+⚠️ **Note:** The training pipeline is currently being finalized. While the script outlines the intended workflow, some components (e.g., data preprocessing and configuration handling) are subject to updates. A stable and fully reproducible version will be released soon.
 
 ```bash
 python training/train_picgan.py \
+  --mode train \
   --data_dir /path/to/training/tensors \
   --config config/sensor.yaml \
   --epochs 100 \
@@ -209,43 +185,56 @@ intensity_std: 0.0462
 If you use the ReaLiTy framework or the LADS dataset in your research, please cite our primary paper:
 
 ```bibtex
-@misc{anand2026reality,
-  title={ReaLiTy and LADS: A Unified Framework and Dataset Suite for LiDAR Adaptation Across Sensors and Adverse Weather Conditions},
-  author={Vivek Anand and Bharat Lohani and Rakesh Mishra and Gaurav Pandey},
-  year={2026},
-  eprint={XXXX.XXXXX},
-  archivePrefix={arXiv},
-  primaryClass={cs.CV}
-}
-```
-```bibtex
-If your work builds upon the underlying physics-informed intensity simulation, please also consider citing our foundational works:
-@ARTICLE{Vivek_Advancing,
-  author={Anand, Vivek and Lohani, Bharat and Pandey, Gaurav and Mishra, Rakesh},
-  journal={IEEE Transactions on Intelligent Transportation Systems}, 
-  title={Advancing LiDAR Intensity Simulation Through Learning With Novel Physics-Based Modalities}, 
-  year={2025},
-  volume={26},
-  number={5},
-  pages={6493-6502},
-  doi={10.1109/TITS.2025.3532687}
-}
 
-@INPROCEEDINGS{anand_snow_iv,
-  author={Anand, Vivek and Lohani, Bharat and Mishra, Rakesh and Pandey, Gaurav},
-  booktitle={2025 IEEE Intelligent Vehicles Symposium (IV)}, 
-  title={Towards Realistic LiDAR Intensity Simulation in Snowy Weather Using Physics-Informed Learning}, 
-  year={2025},
-  pages={2552-2557},
-  doi={10.1109/IV64158.2025.11097501}
-}
-
-@article{anand2024toward,
-  title={Toward Physics-Aware Deep Learning Architectures for LiDAR Intensity Simulation},
-  author={Anand, Vivek and Lohani, Bharat and Pandey, Gaurav and Mishra, Rakesh},
-  journal={arXiv preprint arXiv:2404.15774},
-  year={2024}
-}
+  @article{anand2026sim2real,
+    title   = {Toward Closing the Sim-to-Real Gap: A Physics-Guided Learning Approach for LiDAR Intensity Simulation},
+    author  = {Anand, Vivek and Lohani, Bharat and Kumar, Vaibhav and Mishra, Rakesh and Pandey, Gaurav},
+    journal = {IEEE Transactions on Intelligent Transportation Systems},
+    year    = {2026},
+    note    = {Early access},
+    doi     = {10.1109/TITS.2026.3681982}
+  }
+  
+  @misc{anand2026weather,
+    title         = {Simulating Realistic LiDAR Data Under Adverse Weather for Autonomous Vehicles: A Physics-Informed Learning Approach},
+    author        = {Anand, Vivek and Lohani, Bharat and Mishra, Rakesh and Pandey, Gaurav},
+    year          = {2026},
+    eprint        = {2604.01254},
+    archivePrefix = {arXiv},
+    primaryClass  = {cs.RO},
+    note          = {arXiv preprint},
+    url           = {https://arxiv.org/abs/2604.01254}
+  }
+  
+  @article{anand2025lblis,
+    title   = {Advancing LiDAR Intensity Simulation Through Learning With Novel Physics-Based Modalities},
+    author  = {Anand, Vivek and Lohani, Bharat and Pandey, Gaurav and Mishra, Rakesh},
+    journal = {IEEE Transactions on Intelligent Transportation Systems},
+    year    = {2025},
+    volume  = {26},
+    number  = {5},
+    pages   = {6493--6502},
+    doi     = {10.1109/TITS.2025.3532687}
+  }
+  
+  @inproceedings{anand2025snow,
+    title     = {Towards Realistic LiDAR Intensity Simulation in Snowy Weather Using Physics-Informed Learning},
+    author    = {Anand, Vivek and Lohani, Bharat and Mishra, Rakesh and Pandey, Gaurav},
+    booktitle = {IEEE Intelligent Vehicles Symposium (IV)},
+    year      = {2025},
+    pages     = {2552--2557},
+    doi       = {10.1109/IV64158.2025.11097501}
+  }
+  
+  @misc{anand2026reality_lads,
+    title         = {ReaLiTy and LADS: A Unified Framework and Dataset Suite for LiDAR Adaptation Across Sensors and Adverse Weather Conditions},
+    author        = {Anand, Vivek and others},
+    year          = {2026},
+    eprint        = {XXXX.XXXXX},
+    archivePrefix = {arXiv},
+    primaryClass  = {cs.RO},
+    note          = {arXiv preprint}
+  }
 
 ```
 ---
