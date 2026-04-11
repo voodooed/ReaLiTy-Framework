@@ -1,0 +1,84 @@
+# ==========================================
+# Global Mode & Experiment Settings
+# ==========================================
+mode: "weather"           # Options: "sensor" or "weather"
+experiment_name: "T1"    # Used for weight naming and output folders
+
+# ==========================================
+# LiDAR Sensor Specifications (KITTI Style)
+# ==========================================
+# Based on Phase 1 & 3 requirements
+fov_up: 2.0
+fov_down: -24.9
+width: 1024
+height: 64
+
+# Input Normalization Stats
+range_mean: 0.0965
+range_std: 0.1068
+incidence_mean: 0.7156
+incidence_std: 0.6352
+reflectance_mean: 0.2979
+reflectance_std: 0.2743
+
+# ==========================================
+# Adverse Weather Parameters (LISA)
+# ==========================================
+# Only active if mode is "weather"
+atm_model: "snow"        # Options: "snow", "rain"
+precipitation_rate: 30.0 # Intensity in mm/hr
+
+# ==========================================
+# Deep Learning Normalization
+# ==========================================
+# Use the appropriate values for Snow or Rain
+
+intensity_mean: 0.0158 #CADC Snow
+intensity_std: 0.0462  #CADC Snow
+
+#intensity_mean: 0.0230 #Boreas Rain
+#intensity_std: 0.0549 #Boreas Rain
+
+
+
+
+
+# ==========================================
+# Semantic Reflectance Map
+# ==========================================
+# Mapping for Phase 1 projection
+reflectance_map:
+  0: 0.0    # Unlabeled
+  1: 0.0    # Outlier
+  10: 0.7   # Car
+  11: 0.7   # Bicycle
+  13: 0.7   # Bus
+  15: 0.7   # Motorcycle
+  16: 0.6   # On-rails
+  18: 0.7   # Truck
+  20: 0.7   # Other-vehicle
+  30: 0.3   # Person
+  31: 0.7   # Bicyclist
+  32: 0.3   # Motorcyclist
+  40: 0.2   # Road
+  44: 0.2   # Sidewalk
+  48: 0.2   # Other-ground
+  49: 0.2   # Building
+  50: 0.7   # Fence
+  51: 0.7   # Other-structure
+  52: 0.5   # Pole
+  60: 0.2   # Traffic-sign
+  70: 0.55  # Vegetation
+  71: 0.55  # Trunk
+  72: 0.4   # Terrain
+  80: 0.7   # Pole
+  81: 0.7   # Traffic-sign
+  99: 0.5   # Other-object
+  252: 0.7  # Moving-car
+  253: 0.7  # Moving-bicyclist
+  254: 0.3  # Moving-person
+  255: 0.3  # Moving-motorcyclist
+  256: 0.6  # Moving-on-rails
+  257: 0.7  # Moving-bus
+  258: 0.7  # Moving-truck
+  259: 0.7  # Moving-other-vehicle
