@@ -1,0 +1,19 @@
+# ==========================================
+# ReaLiTy - Sensor Adaptation Config
+# ==========================================
+
+mode: sensor
+
+projection:
+  H: 64
+  W: 1024
+  fov_up: 3.0
+  fov_down: -25.0
+
+intensity:
+  mean: 0.0158
+  std: 0.0462
+
+weather:
+  atm_model: null
+  precipitation_rate: 0.0
