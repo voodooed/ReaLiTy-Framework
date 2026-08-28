@@ -1,92 +1,189 @@
-# ReaLiTy: A Realistic LiDAR Transformation Framework & LADS Dataset
+# ReaLiTy: Realistic LiDAR Transformation Framework 
 ## Sim2Real Adaptation for Realistic LiDAR Sensor and Weather Simulation
 
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)
 ![PyTorch](https://img.shields.io/badge/PyTorch-Tested-red.svg)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 
-**ReaLiTy** (Realistic LiDAR Transformation) is a unified, domain-adaptive framework designed for the physically and statistically consistent transformation of LiDAR point clouds. 
+**ReaLiTy** transforms clear-weather simulated or real LiDAR point clouds so their distribution matches a different target condition — either another sensor's response characteristics, or the same scene as it would appear under adverse weather. 
 
-Built around a conditional generative adversarial architecture (PICGAN) and physics-informed atmospheric modeling, ReaLiTy bridges the sim-to-real gap for autonomous vehicle perception systems. It enables robust adaptation across heterogeneous sensors and adverse weather conditions (such as rain and snow) without requiring full data recollection.
+Scene Layout is preserved exactly, and outputs are written in the source's native format, so a converted cloud is a drop-in replacement for the original in downstream training and evaluation.
+
+```
+Input cloud → [physics weather degradation] → spherical projection
+            → intensity transfer (PICGAN) → back-projection → output cloud
+```
+
+Built around our Physics-Informed Cycle-Consistent generative adversarial architecture (PICGAN) and physics-informed atmospheric modeling, ReaLiTy bridges the sim-to-real gap for autonomous vehicle perception systems. It enables robust adaptation across heterogeneous sensors and adverse weather conditions (such as rain and snow) without requiring full data recollection.
 
 Using this framework, we introduce **LADS** (LiDAR Adaptation Dataset Suite), a large-scale benchmark that injects physically accurate adverse weather (snow and rain) into standard clear-weather autonomous driving datasets like KITTI and nuScenes.
 
 ---
 
-## 🔹 Core Capabilities
+## Core Capabilities
 
-* **Sensor-to-Sensor Adaptation:** Transform synthetic or source-domain point clouds to emulate the intensity, beam divergence, and noise profiles of target LiDAR hardware.
-* **Physics-Informed Weather Adaptation:** Seamlessly integrate the LISA atmospheric model to simulate the geometric and intensity effects of adverse weather (fog, snow, rain) on clean point clouds.
+* **Sensor-to-Sensor Adaptation:** Transform synthetic or source-domain point clouds to emulate the intensity, beam divergence, and noise profiles of target LiDAR senso.
+* **Physics-Informed Weather Adaptation:** Seamlessly integrate an atmospheric model to simulate the geometric and intensity effects of adverse weather (fog, snow, rain) on clean point clouds.
 * **Sim-to-Real Intensity Bridging:** Reduce the domain gap by learning target-domain intensity distributions conditioned on local geometry, incidence angles, and acquisition context.
 * **Fast Vectorized Backprojection:** Efficiently map 2D predicted intensity tensors back to 3D spherical point clouds using an optimized, loop-free projection module.
-
-## 📂 Framework Structure
-
-```plaintext
-ReaLiTy/
-│
-├── ReaLiTy.py
-│
-├── models/
-│     ├── PICGAN/
-│     
-│
-├── prepare_training_data.py
-│
-├── structure/
-│     ├── projection.py
-│     ├── weather.py
-│     ├── backprojection.py
-│
-├── data/
-│     └── prepare_training_data.py
-│
-├── training/
-│     └── train_picgan.py
-│
-├── transform/
-│     └── transform.py
-│
-├── weights/
-│     ├── sensor/
-│     └── weather/
-│
-├── configs/
-│     ├── sensor.yaml
-│     └── weather.yaml
-│
-└── README.md
-```
-
 ---
 
-## Installation & Setup
-
-### 1. Clone the Repository
+## Installation
 
 ```bash
-git clone https://github.com/voodooed/ReaLiTy-Framework.git
-cd ReaLiTy_Framework
-```
-
-### 2. Create a Virtual Environment
-
-We recommend using Conda to manage dependencies.
-
-```bash
-conda create -n reality python=3.9
-conda activate reality
-```
-
-### 3. Install Dependencies
-
-Install all dependencies using:
-
-```bash
+conda create -n reality python=3.11 && conda activate reality
+pip install --index-url https://download.pytorch.org/whl/cu126 torch torchvision
 pip install -r requirements.txt
 ```
+The CUDA build matters. Check that the GPU can actually run a kernel, not merely
+that it is visible:
+
+```bash
+python -c "import torch; torch.mm(torch.randn(8,8,device='cuda'), torch.randn(8,8,device='cuda')); print('ok')"
+```
+
+The physics weather-degradation model ships with the repository, so the weather
+path works out of the box. To substitute your own, see
+[docs/weather_model.md](docs/weather_model.md).
 
 ---
+
+## Data
+
+One directory per dataset; the role each plays is chosen in the run config, not by
+the filesystem:
+
+```
+data/
+├── KITTI/
+│   ├── train/                 point clouds
+│   ├── test/                  held back for evaluation and inference
+│   └── labels/{train,test}/   optional, enables the reflectance channel
+└── CADC/
+    ├── train/
+    └── test/
+```
+
+```bash
+python tools/prepare_data_kitti_cadc.py \
+    --kitti /path/to/raw/KITTI --cadc /path/to/raw/CADC --out data
+```
+
+`.bin` (headerless float32) and `.npy` are both accepted, and columns are declared
+in config rather than inferred. Full details, including the split policy and
+bring-your-own-data, are in [data/README.md](data/README.md).
+
+---
+
+## Usage
+
+Four commands cover the workflow. Configurations live in
+`reality/configs/{sensor,weather}/`.
+
+```bash
+# 1. Build the cached range-image stacks (optional — train does this automatically)
+python -m reality prepare-data --config reality/configs/weather/kitti_to_cadc.yaml
+
+# 2. Train: prepares the cache, measures normalization over the full training set,
+#    then trains. Re-running resumes from the last checkpoint.
+python -m reality train --config reality/configs/weather/kitti_to_cadc.yaml
+
+# 3. Convert a dataset split with trained weights
+python -m reality generate --config reality/configs/weather/kitti_to_cadc.yaml \
+    --checkpoint weights/weather/kitti_to_cadc_gen_r.pt --split test
+
+# 4. Score against the target distribution
+python -m reality evaluate --config reality/configs/weather/kitti_to_cadc.yaml \
+    --checkpoint weights/weather/kitti_to_cadc_gen_r.pt --label my_run
+```
+
+Preparation is cached and keyed by the settings that affect the tensors, so it
+runs once and every later epoch and run reuses it. Training writes a run directory
+containing the checkpoints, the measured statistics, a snapshot of the resolved
+config and a log.
+
+A SLURM template for cluster training is in `scripts/train_weather.sh`.
+
+### Pretrained weights
+
+`weights/weather/kitti_to_cadc_gen_r.pt` — KITTI → CADC (snow). The normalization
+statistics are stored **inside** the checkpoint, so intensities denormalise
+correctly wherever it is used. See [weights/README.md](weights/README.md).
+
+### Bring your own data
+
+Arrange any dataset in the same `train/` + `test/` shape and declare its layout:
+
+```yaml
+data_root: data
+source:
+  dataset: generic
+  path: data/MySimulator
+  format: npy
+  columns: [x, y, z, intensity, physics_intensity]
+target:
+  dataset: generic
+  path: data/MySensor
+  format: bin
+  columns: [x, y, z, intensity, ring]
+  intensity_scale: 255.0
+sensor: {proj_H: 64, proj_W: 1024, fov_up: 3.0, fov_down: -25.0}
+```
+
+A source that already carries a physics-based intensity should declare a
+`physics_intensity` column; the weather stage is then unnecessary. Start from
+`reality/configs/sensor/template_sensor.yaml`.
+
+---
+
+## Extending
+
+Every stage is selected by name from a registry, so new components are additions
+rather than edits:
+
+| to add | implement | select with |
+|---|---|---|
+| a dataset | `DatasetAdapter` | `source: {dataset: ...}` |
+| a weather model | `GeometricDegradation` | `geometric_degradation: {type: ...}` |
+| an intensity model | `IntensityModel` | `model: {type: ...}` |
+| a metric | `Evaluator` | — |
+
+See [docs/weather_model.md](docs/weather_model.md) and
+[docs/modifying_picgan.md](docs/modifying_picgan.md).
+
+---
+
+## Repository structure
+
+```
+reality/
+├── cli.py                 entry point for prepare-data / train / generate / evaluate
+├── configs/
+│   ├── sensor/             sensor-transfer configs (e.g. voxelscape_to_kitti.yaml)
+│   └── weather/             weather-transfer configs (e.g. kitti_to_cadc.yaml)
+├── core/                   config loading, pipeline orchestration, determinism, registry
+├── datasets/               per-dataset adapters (KITTI, nuScenes, CADC, Boreas, VoxelScape, generic)
+├── degradation/            geometric degradation plugins (physics weather, learned)
+├── preprocessing/          spherical projection, statistics, disk cache
+├── models/                 intensity models, incl. the vendored PICGAN/ network and its adapter
+├── postprocessing/         back-projection from range image to point cloud
+├── inference/               checkpoint-driven generation and ONNX export
+├── training/               trainer, dataset wrapper, checkpointing, logging
+├── evaluation/             distributional metrics against the target sensor/weather
+├── io/                     output writers (native per-source format)
+├── physics/                reflectance LUT and ECOSTRESS-derived reflectance lookup
+├── structure/weather_model/ vendored LISA scattering model (GPL-3.0, see THIRD_PARTY.md)
+└── tests/                  pytest suite mirroring the package layout
+
+data/          per-dataset train/test point clouds (see data/README.md)
+weights/       pretrained checkpoints (see weights/README.md)
+docs/          extending the weather model and PICGAN
+scripts/       SLURM training template, run evaluation helper
+tools/         raw-dataset preparation (prepare_data_kitti_cadc.py)
+```
+
+---
+
 
 ## The LADS Dataset
 
@@ -104,80 +201,17 @@ LADS provides physically accurate, adverse-weather augmented versions of standar
 
 ---
 
-## 💻 Usage Guide
+## Scope and known limitations
 
-ReaLiTy uses a single entry point (reality.py) driven by a master config.yaml.
-
-### 0. Configuration (config.yaml)
-Define your LiDAR sensor parameters, semantic reflectance mappings, and weather conditions:
-
-YAML
-mode: "weather"             # "sensor" or "weather"
-experiment_name: "T1"
-fov_up: 2.0
-fov_down: -24.9
-width: 1024
-height: 64
-intensity_mean: 0.5
-intensity_std: 0.2
-atm_model: "snow"
-precipitation_rate: 10.0
-
-### 1. Run Inference / Transformation
-
-Process a directory of raw KITTI .bin files into realism-consistent, weather-adapted point clouds:
-
-Bash
-python reality.py \
-  --mode transform \
-  --config config.yaml \
-  --picgan_root /path/to/PICGAN \
-  --weights weights/weather/kitti_clear2snow.pth.tar \
-  --input /path/to/raw/dataset \
-  --output /path/to/transformed/dataset
-  
-### 2. Train on a New Sensor/Weather Target
-   
-⚠️ **Note:** The training pipeline is currently being finalized. While the script outlines the intended workflow, some components (e.g., data preprocessing and configuration handling) are subject to updates. A stable and fully reproducible version will be released soon.
-
-```bash
-python training/train_picgan.py \
-  --mode train \
-  --data_dir /path/to/training/tensors \
-  --config config/sensor.yaml \
-  --epochs 100 \
-  --batch_size 4
-```
-
-### 3. Visualizing Results
-
-We highly recommend using **Open3D** to visualize the 3D point clouds. When visualizing nuScenes, remember to isolate the first 4 columns, as the 5th column contains the beam ring index.
-
----
-
-## ⚙️ Configuration (`config/`)
-
-The YAML configuration files control the strict geometric parameters of the LiDAR sensors and the normalization statistics for the neural network.
-
-**Example `weather.yaml` parameters:**
-
-```yaml
-# Sensor Geometry (KITTI HDL-64E)
-proj_H: 64
-proj_W: 2048
-proj_fov_up: 3.0
-proj_fov_down: -25.0
-
-# Neural Normalization (Required for accurate Intensity prediction)
-range_mean: 0.0965
-range_std: 0.1068
-incidence_mean: 0.7156
-incidence_std: 0.6352
-
-# Output Denormalization (Target Domain stats)
-intensity_mean: 0.0158
-intensity_std: 0.0462
-```
+- **Intensity adaptation targets the bulk distribution.** Against raw physics
+  degradation the model reduces the Wasserstein distance to the real target
+  distribution by roughly an order of magnitude, and reproduces its mean closely.
+- **Unpaired evaluation.** No paired ground truth exists for a clear-weather scene
+  observed under adverse weather, so target comparisons are distributional across
+  scenes rather than per-frame.
+- **Projection coverage.** At `proj_W = 1024` a substantial share of points share
+  pixels and only the nearest is written; raising the projection width increases
+  coverage at proportional cost.
 
 ---
 
