@@ -1,0 +1,36 @@
+# Weather transfer: KITTI (clear) -> CADC (snow).
+#
+#   cloud -> physics weather degradation -> spherical projection
+#         -> PICGAN intensity transfer -> back-projection -> cloud
+#
+# The degradation stage runs on the 3D cloud and emits the physics-based
+# intensity that PICGAN's physics loss consumes. KITTI carries SemanticKITTI
+# labels, so the source stack is 3-channel (range, incidence, reflectance);
+# CADC has no per-point labels and contributes intensity only.
+#
+# Build data/ with:  python tools/prepare_data_kitti_cadc.py --help
+data_root: data
+source: {dataset: kitti}
+target: {dataset: cadc}
+task: {type: weather}
+geometric_degradation:
+  enabled: true
+  type: physics          # physics-based weather degradation
+  weather: snow          # snow | rain
+  precipitation_rate: 30.0
+  mode: strongest        # lidar return mode: strongest | last
+  rmax: 200.0
+  rmin: 1.5
+  bdiv: 3.0e-3
+  # Directory holding the weather model (atmos_models.py + mie_q.npz).
+  # null uses $REALITY_WEATHER_MODEL_PATH -- see docs/weather_model.md
+  weather_model_path: null
+  weather_model_module: atmos_models    # or atmos_models_cpu for the pure-CPU implementation
+# Projection geometry: Velodyne HDL-64E (KITTI).
+sensor: {proj_H: 64, proj_W: 1024, fov_up: 3.0, fov_down: -25.0}
+model: {type: picgan}
+# Normalization constants are measured from the configured datasets.
+normalization: {source: computed, frames: 50, seed: 0}
+training: {batch_size: 8, epochs: 200, learning_rate: 1.0e-5,
+           lambda_cycle: 10, lambda_physics: 10, seed: 42}
+output: {checkpoint_dir: weights/weather/kitti_to_cadc}

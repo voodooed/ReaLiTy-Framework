@@ -1,0 +1,15 @@
+# Weather transfer (snow): VoxelScape -> CADC.
+# Projection -> the weather model degradation -> PICGAN -> back-projection. The degradation
+# stage produces the physics intensity that PICGAN's physics loss consumes.
+source: {dataset: voxelscape}
+target: {dataset: cadc}
+task: {type: weather}
+geometric_degradation:
+  enabled: true
+  type: physics
+  weather: snow
+  precipitation_rate: 30.0
+model: {type: picgan}
+training: {batch_size: 8, epochs: 200, learning_rate: 1.0e-5,
+           lambda_cycle: 10, lambda_physics: 10}
+output: {checkpoint_dir: weights/voxelscape_to_cadc}
