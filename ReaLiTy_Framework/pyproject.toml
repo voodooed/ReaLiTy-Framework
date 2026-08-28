@@ -1,0 +1,13 @@
+[project]
+name = "reality"
+version = "0.1.0"
+description = "Physics-informed orchestration framework for LiDAR intensity adaptation"
+requires-python = ">=3.9"
+dependencies = ["numpy", "pyyaml", "torch", "torchvision"]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.pytest.ini_options]
+testpaths = ["reality/tests"]
+addopts = "-q"

@@ -1,0 +1,28 @@
+# ReaLiTy runtime dependencies, pinned to the versions verified in the `reality`
+# environment (conda env, Python 3.11.15).
+#
+# SciPy note: some scattering models and PyMieScatt import scipy.integrate.trapz,
+# which SciPy removed in 1.14 (renamed to trapezoid).
+# reality/degradation/physics_weather.py restores the alias before importing them,
+# so a current SciPy works without patching third-party sources.
+#
+# torch/torchvision must come from the CUDA 12.6 wheel index: the cu130 build has
+# no sm_70 kernels, so every CUDA op on this machine's Tesla V100s fails with
+# "no kernel image is available for execution on the device". Install with:
+#
+#   pip install --index-url https://download.pytorch.org/whl/cu126 torch torchvision
+#
+--index-url https://download.pytorch.org/whl/cu126
+--extra-index-url https://pypi.org/simple
+
+torch==2.13.0+cu126
+torchvision==0.28.0+cu126
+
+numpy==2.4.4
+PyYAML==6.0.3
+scipy==1.17.1          # weather model: Mie scattering integrals
+PyMieScatt==1.8.1.1    # weather model: Mie coefficients (unused when a table is supplied)
+numba==0.67.0
+matplotlib==3.11.1     # PICGAN utils.py
+Pillow==12.2.0         # PICGAN dataset.py
+tqdm==4.70.0           # PICGAN train.py

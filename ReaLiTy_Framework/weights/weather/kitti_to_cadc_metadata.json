@@ -1,0 +1,74 @@
+{
+  "framework_version": "0.1.0",
+  "checkpoint_format_version": 1,
+  "epoch": 199,
+  "model": "picgan",
+  "in_channels_s": 3,
+  "in_channels_r": 1,
+  "normalization_mode": "computed",
+  "source_dataset": "kitti",
+  "target_dataset": "cadc",
+  "task": "weather",
+  "weather": "snow",
+  "degradation": "physics",
+  "run_name": "kitti_to_cadc",
+  "config": {
+    "source": {
+      "dataset": "kitti",
+      "path": "Data/KITTI",
+      "columns": [],
+      "intensity_scale": 1.0,
+      "sequences": [],
+      "split": "train"
+    },
+    "target": {
+      "dataset": "cadc",
+      "path": "Data/CADC",
+      "columns": [],
+      "intensity_scale": 1.0,
+      "sequences": [],
+      "split": "train"
+    },
+    "task": {
+      "type": "weather"
+    },
+    "data_root": "Data",
+    "model": {
+      "type": "picgan"
+    },
+    "training": {
+      "batch_size": 8,
+      "epochs": 200,
+      "learning_rate": 1e-05,
+      "lambda_cycle": 10.0,
+      "lambda_physics": 10.0,
+      "num_workers": 4,
+      "seed": 42
+    },
+    "geometric_degradation": {
+      "enabled": true,
+      "type": "physics",
+      "weather": "snow",
+      "precipitation_rate": 30.0,
+      "mode": "strongest",
+      "rmax": 200.0,
+      "rmin": 1.5,
+      "bdiv": 0.003,
+      "weather_model_module": "atmos_models"
+    },
+    "normalization": {
+      "source": "computed",
+      "frames": 50,
+      "seed": 0
+    },
+    "sensor": {
+      "proj_H": 64,
+      "proj_W": 1024,
+      "fov_up": 3.0,
+      "fov_down": -25.0
+    },
+    "output": {
+      "checkpoint_dir": "/DATA1/Vivek/ReaLiTy/runs/kitti_to_cadc"
+    }
+  }
+}
