@@ -1,0 +1,203 @@
+# Material reflectance look-up table at ~905 nm (typical automotive LiDAR wavelength).
+#
+# TWO LAYERS, deliberately separated:
+#   materials:  generic, dataset-independent material -> reflectance in [0, 1].
+#   class_maps: per-dataset semantic class id -> material name.
+# To support a new labelled dataset, add a class_map; the material table is reused.
+#
+# SOURCES (the `source` field is one of these, and is never overstated):
+#   ECOSTRESS: <sample name>  value read from the NASA/JPL ECOSTRESS Spectral
+#                             Library v1.0 (speclib.jpl.nasa.gov), interpolated at
+#                             0.905 um from the published spectrum. `measured_pct`
+#                             is the reading; `reflectance` is it / 100.
+#   informed-estimate         no ECOSTRESS sample exists at 905 nm for this material.
+#                             `anchor` names the closest measured evidence and the
+#                             justification states why the value departs from it.
+#   default-assumed           no material identity at all (unlabeled/outlier/other).
+#
+# Values are clamped to [0, 1]; where a source reading exceeds 100 %, `measured_pct`
+# preserves the raw number. Readings are at normal incidence: angular falloff and
+# range attenuation are modelled downstream, not baked in here.
+#
+# Reference: Meerdink et al. (2019), "The ECOSTRESS spectral library version 1.0",
+# Remote Sensing of Environment 230:111196.
+
+default_material: unknown
+
+materials:
+
+  # --- road surfaces -------------------------------------------------------
+  asphalt:
+    reflectance: 0.10
+    measured_pct: 10.19
+    source: "ECOSTRESS: Construction Asphalt (Road / Paving Asphalt)"
+    justification: Mean of 3 paving-asphalt samples at 905 nm; dark bituminous surface.
+  tar:
+    reflectance: 0.06
+    measured_pct: 6.03
+    source: "ECOSTRESS: Construction Tar (Road / Tar)"
+    justification: Mean of 2 tar samples; darker than aggregate asphalt.
+  gravel:
+    reflectance: 0.30
+    measured_pct: 30.19
+    source: "ECOSTRESS: Brown sandy loam / gravelly loam soils"
+    justification: Mean of gravelly and sandy loam soil samples, standing in for unpaved ground.
+
+  # --- construction --------------------------------------------------------
+  concrete:
+    reflectance: 0.35
+    measured_pct: 34.64
+    source: "ECOSTRESS: Construction Concrete (Paving + Construction Concrete)"
+    justification: Mean of 4 concrete samples at 905 nm.
+  brick:
+    reflectance: 0.26
+    measured_pct: 26.29
+    source: "ECOSTRESS: Red smooth-faced / Bare / Weathered Red Brick"
+    justification: Mean of 3 brick samples at 905 nm.
+  building_facade:
+    reflectance: 0.30
+    measured_pct: 30.47
+    source: "ECOSTRESS: Construction Concrete + Red Brick"
+    justification: Mean of the concrete and brick groups; facades are a mix of both.
+  glass:
+    reflectance: 0.08
+    measured_pct: 8.35
+    source: "ECOSTRESS: Plate Window Glass"
+    justification: Transmissive at 905 nm, so little energy returns to the sensor.
+  wood:
+    reflectance: 0.90
+    measured_pct: 89.66
+    source: "ECOSTRESS: Pine Wood"
+    justification: Mean of 2 pine wood samples; dry timber is highly reflective in the NIR.
+
+  # --- metals --------------------------------------------------------------
+  metal_structural:
+    reflectance: 0.75
+    measured_pct: 59.57
+    source: informed-estimate
+    anchor: "ECOSTRESS: Aluminum Metal (Roofing Material / Metal) = 59.57 % @905 nm"
+    justification: >-
+      ECOSTRESS carries only weathered roofing metal in the NIR (aluminium 59.57 %,
+      galvanized steel 6.5-22.1 %, oxidised galvanized 17.2 %); its gold, brass and
+      metallic-silver reference plates are thermal-infrared only (2-15 um) and cannot
+      be read at 905 nm. Bare aluminium and steel are ~85-90 % reflective at 900 nm,
+      so the weathered 59.57 % sample is treated as a lower bound and the value is
+      set to 0.75 for clean structural metal (poles, railings, posts).
+  fence_mixed:
+    reflectance: 0.32
+    source: informed-estimate
+    anchor: >-
+      ECOSTRESS: Construction Concrete 34.64 %, Red Brick 26.29 %, Galvanized Steel
+      Metal 15.24 %, Pine Wood 89.66 % @905 nm
+    justification: >-
+      KITTI fences are heterogeneous - wooden panels, hedges, wire mesh, low walls -
+      and are deliberately not treated as structural metal. Set to a mid value across
+      the plausible constituent materials rather than committing to any one of them.
+  metal_galvanized_weathered:
+    reflectance: 0.15
+    measured_pct: 15.24
+    source: "ECOSTRESS: Galvanized Steel Metal + Oxidized Galvanized Steel Metal"
+    justification: Mean of 3 weathered galvanized roofing samples; dull oxidised zinc.
+
+  # --- paints and coatings -------------------------------------------------
+  paint_vehicle:
+    reflectance: 0.52
+    measured_pct: 51.50
+    source: "ECOSTRESS: Olive green paint + Olive green gloss paint"
+    justification: >-
+      Mean of 4 vehicle-enamel samples (62.97, 57.47, 44.08, 41.48 %). ECOSTRESS's
+      other paints are black calibration coatings (~4 %), unrepresentative of traffic.
+      Real vehicle paint spans black (~5 %) to white (~90 %); this is a mid-range value.
+  paint_white:
+    reflectance: 0.60
+    measured_pct: 59.90
+    source: "ECOSTRESS: White rubberized coating"
+    justification: Closest measured white coating; stands in for white road-marking paint.
+  paint_dark:
+    reflectance: 0.04
+    measured_pct: 3.96
+    source: "ECOSTRESS: Black paint / Black gloss paint"
+    justification: Mean of 4 black paint samples at 905 nm.
+
+  # --- vegetation ----------------------------------------------------------
+  vegetation_green:
+    reflectance: 0.49
+    measured_pct: 49.01
+    source: "ECOSTRESS: green shrub foliage (Arctostaphylos, Baccharis, Puya)"
+    justification: Mean of 52 green-foliage spectra; the NIR plateau past the red edge.
+  grass:
+    reflectance: 0.55
+    measured_pct: 54.97
+    source: "ECOSTRESS: Avena fatua, Bromus diandrus, Grass"
+    justification: Mean of 5 grass spectra at 905 nm.
+  bark:
+    reflectance: 0.33
+    measured_pct: 32.52
+    source: "ECOSTRESS: Pinus / Abies / Betula bark"
+    justification: Mean of 7 bark spectra; excludes no samples, so bright birch is included.
+
+  # --- materials with no ECOSTRESS analogue at 905 nm ----------------------
+  fabric_clothing:
+    reflectance: 0.60
+    source: informed-estimate
+    anchor: "Sozzi et al. 945 nm dataset, 12 dry cotton/polyester garments = 79.2 % at normal incidence"
+    justification: >-
+      ECOSTRESS is a geology/vegetation library and contains no textile at 905 nm.
+      Garment fabrics are strongly reflective in the NIR; set below the 945 nm garment
+      mean to stay conservative for dark and wet clothing.
+  retroreflective_sheeting:
+    reflectance: 1.00
+    measured_pct: 200.14
+    source: informed-estimate
+    anchor: "Sozzi et al. 945 nm dataset, polymer_retroreflectivesheet_roadsign = 200.14 % of a Lambertian standard"
+    justification: >-
+      No ECOSTRESS analogue. Retroreflective sheeting is engineered to return incident
+      energy along the incoming ray, which is exactly a coaxial LiDAR's geometry, and it
+      holds ~200 % of Lambertian across 0-40 deg incidence. Saturates the [0, 1] range.
+  unknown:
+    reflectance: 0.20
+    source: default-assumed
+    justification: >-
+      Documented fallback for points with no material identity (unlabeled, outlier,
+      other-object) and for any class id absent from a class map.
+
+class_maps:
+
+  # SemanticKITTI label ids (config/semantic-kitti.yaml, Behley et al. ICCV 2019).
+  # Moving classes 252-259 mirror their static counterparts: motion does not change
+  # the material.
+  semantickitti:
+    0:   {name: unlabeled,            material: unknown}
+    1:   {name: outlier,              material: unknown}
+    10:  {name: car,                  material: paint_vehicle}
+    11:  {name: bicycle,              material: paint_vehicle}
+    13:  {name: bus,                  material: paint_vehicle}
+    15:  {name: motorcycle,           material: paint_vehicle}
+    16:  {name: on-rails,             material: paint_vehicle}
+    18:  {name: truck,                material: paint_vehicle}
+    20:  {name: other-vehicle,        material: paint_vehicle}
+    30:  {name: person,               material: fabric_clothing}
+    31:  {name: bicyclist,            material: fabric_clothing}
+    32:  {name: motorcyclist,         material: fabric_clothing}
+    40:  {name: road,                 material: asphalt}
+    44:  {name: parking,              material: asphalt}
+    48:  {name: sidewalk,             material: concrete}
+    49:  {name: other-ground,         material: gravel}
+    50:  {name: building,             material: building_facade}
+    51:  {name: fence,                material: fence_mixed}
+    52:  {name: other-structure,      material: concrete}
+    60:  {name: lane-marking,         material: paint_white}
+    70:  {name: vegetation,           material: vegetation_green}
+    71:  {name: trunk,                material: bark}
+    72:  {name: terrain,              material: grass}
+    80:  {name: pole,                 material: metal_structural}
+    81:  {name: traffic-sign,         material: retroreflective_sheeting}
+    99:  {name: other-object,         material: unknown}
+    252: {name: moving-car,           material: paint_vehicle}
+    253: {name: moving-bicyclist,     material: fabric_clothing}
+    254: {name: moving-person,        material: fabric_clothing}
+    255: {name: moving-motorcyclist,  material: fabric_clothing}
+    256: {name: moving-on-rails,      material: paint_vehicle}
+    257: {name: moving-bus,           material: paint_vehicle}
+    258: {name: moving-truck,         material: paint_vehicle}
+    259: {name: moving-other-vehicle, material: paint_vehicle}

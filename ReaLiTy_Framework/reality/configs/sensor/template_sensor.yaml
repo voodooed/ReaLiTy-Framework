@@ -1,0 +1,21 @@
+# Bring-your-own data. The `generic` adapter reads layout from this file instead
+# of assuming a format: declare columns, intensity scale and sensor geometry.
+# Omit `labels` and the framework drops the reflectance channel and builds PICGAN
+# with a 2-channel source (range + incidence) automatically.
+source:
+  dataset: generic
+  path: /data/mysource
+  format: bin
+  columns: [x, y, z, intensity]        # declared, never guessed
+  intensity_scale: 1.0
+  labels: {path: /data/mysource/labels, format: semantickitti}  # optional
+target:
+  dataset: generic
+  path: /data/mytarget
+  format: bin
+  columns: [x, y, z, intensity, ring]
+  intensity_scale: 255.0               # e.g. nuScenes-like 0-255
+task: {type: sensor}                   # or weather (then enable geometric_degradation)
+sensor: {proj_H: 64, proj_W: 1024, fov_up: 2.0, fov_down: -24.9}
+model: {type: picgan}
+output: {checkpoint_dir: weights/custom_run}

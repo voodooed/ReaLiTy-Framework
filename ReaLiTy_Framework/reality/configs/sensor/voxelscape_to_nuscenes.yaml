@@ -1,0 +1,10 @@
+# Sensor transfer: VoxelScape -> nuScenes.
+# Same pipeline as the KITTI run — target dataset changes by config only.
+source: {dataset: voxelscape}
+target: {dataset: nuscenes}
+task: {type: sensor}
+geometric_degradation: {enabled: false}
+model: {type: picgan}
+training: {batch_size: 8, epochs: 200, learning_rate: 1.0e-5,
+           lambda_cycle: 10, lambda_physics: 10}
+output: {checkpoint_dir: weights/voxelscape_to_nuscenes}

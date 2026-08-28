@@ -1,0 +1,11 @@
+# Sensor transfer: VoxelScape -> KITTI.
+# Projection -> PICGAN -> back-projection; the physics/the weather model stage is skipped and
+# the physics intensity comes from the source simulator.
+source: {dataset: voxelscape}
+target: {dataset: kitti}
+task: {type: sensor}
+geometric_degradation: {enabled: false}
+model: {type: picgan}
+training: {batch_size: 8, epochs: 200, learning_rate: 1.0e-5,
+           lambda_cycle: 10, lambda_physics: 10}
+output: {checkpoint_dir: weights/voxelscape_to_kitti}
